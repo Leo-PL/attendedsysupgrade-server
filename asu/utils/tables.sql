@@ -152,24 +152,19 @@ create table if not exists profiles_table(
     unique(target_id, profile, model)
 );
 
-create table if not exists supported_devices_table(
-    profile_id integer references profiles_table(profile_id) ON DELETE CASCADE,
-    supported_device varchar(100),
-    unique(profile_id, supported_device)
-);
-
 create or replace view profiles as
     select * from targets join profiles_table using (target_id);
 
 create or replace rule insert_profiles AS
 ON insert TO profiles DO INSTEAD (
-    insert into profiles_table (target_id, profile, model) values (
+    insert into profiles_table (target_id, profile, model, metadata) values (
         (select target_id from targets where
             targets.distro = NEW.distro and
             targets.version = NEW.version and
             targets.target = NEW.target),
         NEW.profile,
-        NEW.model
+        NEW.model,
+        NEW.metadata
     )  on conflict do nothing;
 );
 
@@ -180,8 +175,14 @@ on delete to profiles do instead (
     where old.profile_id = profiles_table.profile_id;
 );
 
+create table if not exists supported_devices_table(
+    profile_id integer references profiles_table(profile_id) ON DELETE CASCADE,
+    supported_device varchar(100),
+    unique(profile_id, supported_device)
+);
+
 create or replace view supported_devices as
-    select supported_device, profile, metadata
+    select distro, version, target, profile, metadata, supported_device
         from supported_devices_table join profiles using (profile_id);
 
 create table if not exists packages_names(
@@ -774,21 +775,31 @@ create or replace function manifest_upgrades (
 ' LANGUAGE 'sql';
 
 create or replace function insert_packages_profile(
-    distro varchar, version varchar, target varchar, profile varchar, model varchar, packages text, metadata boolean)
+    distro varchar, version varchar, target varchar, profile varchar, model varchar, packages text, metadata boolean, supported_devices text)
     returns void as '
-    insert into profiles (distro, version, target, profile, model, supported) values (
+    insert into profiles (distro, version, target, profile, model, metadata) values (
         insert_packages_profile.distro,
         insert_packages_profile.version,
         insert_packages_profile.target,
         insert_packages_profile.profile,
         insert_packages_profile.model,
         insert_packages_profile.metadata);
+
+    insert into supported_devices_table (profile_id, supported_device) values (
+        (select profile_id from profiles where
+            insert_packages_profile.distro = distro and
+            insert_packages_profile.version = version and
+            insert_packages_profile.target = target and
+            insert_packages_profile.profile = profile),
+        unnest(string_to_array(insert_packages_profile.supported_devices, '' '')))
+        on conflict do nothing;
+
     insert into packages_profile(distro, version, target, profile, package_name) select
         insert_packages_profile.distro,
         insert_packages_profile.version,
         insert_packages_profile.target,
         insert_packages_profile.profile,
-        unnest(string_to_array( insert_packages_profile.packages, '' ''));
+        unnest(string_to_array(insert_packages_profile.packages, '' ''));
 ' LANGUAGE 'sql';
 
 create or replace function get_build_job() returns table(

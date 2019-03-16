@@ -285,10 +285,9 @@ class Worker(threading.Thread):
             )
             logging.debug("default packages: %s", default_packages)
 
-            profiles_pattern = (
-                r"(.+):\n    (.+)\n    Packages: (.*)\n(?:    hasImageMetadata: )?(\d)?"
-            )
+            profiles_pattern = r"(.+):\n    (.+)\n    Packages: (.*)\n(?:    hasImageMetadata: )?(\d)?(?:(?:\n    SupportedDevices: )(.*?)(?:\n))?"
             profiles = re.findall(profiles_pattern, output)
+            print(profiles)
             if not profiles:
                 profiles = []
             self.database.insert_profiles(

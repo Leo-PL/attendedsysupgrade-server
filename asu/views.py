@@ -297,6 +297,9 @@ def build_all():
         params["request_hash"] = get_request_hash(params)
         database.insert_dict("requests", params)
 
+@app.cli.command()
+def set_outdated():
+    database.c.execute("update targets set last_sync = '2010-01-01';")
 
 @app.cli.command()
 def build_worker():

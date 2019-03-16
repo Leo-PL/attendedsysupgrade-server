@@ -117,7 +117,7 @@ class Database:
 
         self.cnxn.autocommit = False
         # distro, version, target, profile, model, packages, metadata
-        sql = """select insert_packages_profile (?, ?, ?, ?, ?, ?, ?);"""
+        sql = """select insert_packages_profile (?, ?, ?, ?, ?, ?, ?, ?);"""
         self.c.executemany(
             sql,
             list(
@@ -129,7 +129,8 @@ class Database:
                         profile[0],
                         profile[1],
                         profile[2],
-                        profile[4] or 0,
+                        True if profile[3] == "1" else False,
+                        profile[4],
                     ),
                     profiles,
                 )
