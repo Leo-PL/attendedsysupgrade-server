@@ -20,4 +20,4 @@ def test_config_version_distro_vanilla():
 
 
 def test_config_get_all():
-    assert json.loads(Config().get_all())["openwrt"]["distro_alias"] == "OpenWrt"
+    assert json.loads(Config().get_json())["openwrt"]["distro_alias"] == "OpenWrt"
