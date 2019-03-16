@@ -58,6 +58,15 @@ class Config:
     def version(self, distro, version):
         return self.config["distros"][distro]["versions"][version]
 
+    def snapshot(self, distro, version):
+        return self.config["distros"][distro]["versions"][version].get(
+            "snapshots", False
+        )
+
+    def latest(self, distro):
+        return self.config["distros"][distro].get("latest")
+        )
+
     def get(self, opt, alt=None):
         if opt in self.config:
             return self.config[opt]

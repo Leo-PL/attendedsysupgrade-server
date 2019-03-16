@@ -139,10 +139,19 @@ class Database:
         self.commit()
         self.cnxn.autocommit = True
 
-    def check_board_name(self, board_name):
-        sql = """select profile, metadata from supported_devices
-            where supported_device = ?"""
-        return self.c.execute(sql, board_name).fetchone() or (None, False)
+    def check_board_name(self, request):
+        sql = """select profile, metadata from supported_devices where
+            distro = ? and
+            version = ? and
+            target = ? and
+            supported_device = ?;"""
+        return self.c.execute(
+            sql,
+            request["distro"],
+            request["version"],
+            request["target"],
+            request["board_name"],
+        ).fetchone() or (None, False)
 
     def check_packages(self, image):
         sql = """select value as packages_unknown

@@ -10,7 +10,7 @@ class UpgradeCheck(Request):
     def __init__(self, config, db):
         super().__init__(config, db)
         self.log = logging.getLogger(__name__)
-        self.required_params = ["distro", "version", "target", "board_name"]
+        self.required_params = ["distro", "version", "target", "board_name", "revision"]
 
     def _process_request(self):
         bad_request = self.check_bad_distro()
@@ -28,6 +28,8 @@ class UpgradeCheck(Request):
             return bad_request
         self.log.debug("passed version check")
 
+        self.request["board_name"] = self.request_json["board_name"]
+
         profile, metadata = self.database.check_board_name(self.request)
         if not (profile and metadata):
             self.response_json["error"] = "device does not support sysupgrades"
@@ -35,19 +37,17 @@ class UpgradeCheck(Request):
             return self.respond()
         self.log.debug("passed board_name check")
 
-        if self.config.version(self.request["distro"], self.request["version"]).get(
-            "snapshots", False
-        ):
+        if self.config.snapshots(self.request["distro"], self.request["version"]):
             revision = self.database.get_revision(
                 self.request["distro"],
                 self.request["version"],
-                self.request_json["target"],
+                self.request["target"],
             )
             if self.request_json.get("revision") != revision:
                 self.response_json["revision"] = revision
                 self.response_json["version"] = self.request["version"]
         else:
-            latest_version = self.config.get(self.request["distro"]).get("latest")
+            latest_version = self.config.latest(self.request["distro"])
             if latest_version != self.request["version"]:
                 self.response_json["version"] = latest_version
             else:
