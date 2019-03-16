@@ -65,7 +65,6 @@ class Config:
 
     def latest(self, distro):
         return self.config["distros"][distro].get("latest")
-        )
 
     def get(self, opt, alt=None):
         if opt in self.config:
