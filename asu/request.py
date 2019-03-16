@@ -5,11 +5,14 @@ from flask import Response
 
 
 class Request:
+    """Parent request class"""
+
+    log = logging.getLogger(__name__)
+    required_params = []
+
     def __init__(self, config, database):
         self.config = config
         self.database = database
-        self.log = logging.getLogger(__name__)
-        self.required_params = []
 
     def process_request(self, request_json, sysupgrade_requested=False):
         self.request = {}

@@ -6,6 +6,10 @@ from asu.request import Request
 
 
 class BuildRequest(Request):
+    """Handle build requests"""
+
+    required_params = ["distro", "version", "target", "board_name", "revision"]
+
     def __init__(self, config, db):
         super().__init__(config, db)
 
@@ -24,16 +28,6 @@ class BuildRequest(Request):
             else:
                 return self.return_status()
 
-        # TODO check for profile or board
-
-        # generic approach for
-        # https://github.com/aparcar/attendedsysupgrade-server/issues/91
-        self.request_json["board"] = self.request_json["board"].replace(",", "_")
-
-        self.request_json["profile"] = self.request_json[
-            "board"
-        ]  # TODO fix this workaround
-
         request_hash = get_request_hash(self.request_json)
         request_database = self.database.check_request_hash(request_hash)
 
@@ -51,28 +45,18 @@ class BuildRequest(Request):
         # if not perform various checks to see if the request is acutally valid
 
         # validate distro and version
-        if "distro" not in self.request_json:
-            self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
-            self.response_header["X-Missing-Param"] = "distro"
-            return self.respond()
-        else:
-            bad_request = self.check_bad_distro()
-            if bad_request:
-                return bad_request
+        bad_request = self.check_bad_distro()
+        if bad_request:
+            return bad_request
 
-        if "version" not in self.request_json:
-            self.request["version"] = self.config.get(self.request["distro"]).get(
-                "latest"
-            )
-        else:
-            bad_request = self.check_bad_version()
-            if bad_request:
-                return bad_request
+        bad_request = self.check_bad_version()
+        if bad_request:
+            return bad_request
 
         # check for valid target
         bad_target = self.check_bad_target()
-        if bad_target:
-            return bad_target
+        if bad_request:
+            return bad_request
 
         # validate attached defaults
         if "defaults" in self.request_json:
@@ -109,54 +93,18 @@ class BuildRequest(Request):
                 self.request["packages_hash"], self.request["packages"]
             )
 
-        # now some heavy guess work is done to figure out the profile
-        # eventually this could be simplified if upstream unifirm the
-        # profiles/boards
-        if "board" in self.request_json:
-            self.log.debug(
-                "board in request, search for %s", self.request_json["board"]
-            )
-            self.request["profile"] = self.database.check_profile(
-                self.request["distro"],
-                self.request["version"],
-                self.request["target"],
-                self.request_json["board"],
-            )
-
-        if not self.request["profile"]:
-            if "model" in self.request_json:
-                self.log.debug(
-                    "model in request, search for %s", self.request_json["model"]
-                )
-                self.request["profile"] = self.database.check_model(
-                    self.request["distro"],
-                    self.request["version"],
-                    self.request["target"],
-                    self.request_json["model"],
-                )
-                self.log.debug("model search found profile %s", self.request["profile"])
-
-        if not self.request["profile"]:
-            if self.database.check_profile(
-                self.request["distro"],
-                self.request["version"],
-                self.request["target"],
-                "Generic",
-            ):
-                self.request["profile"] = "Generic"
-            elif self.database.check_profile(
-                self.request["distro"],
-                self.request["version"],
-                self.request["target"],
-                "generic",
-            ):
-                self.request["profile"] = "generic"
-            else:
+        if self.request["x86"]:
+            self.request["profile"] = "Generic"
+        else:
+            profile, metadata = self.database.check_board_name(self.request)
+            if not (profile and (metadata or not self.sysupgrade_requested)):
                 self.response_json[
                     "error"
                 ] = "unknown device, please check model and board params"
                 self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
                 return self.respond()
+            else:
+                self.request["profile"] = profile
 
         # all checks passed, eventually add to queue!
         self.log.debug("add build job %s", self.request)

@@ -173,39 +173,6 @@ class Database:
         )
         return self.as_array()
 
-    def check_profile(self, distro, version, target, profile):
-        self.log.debug("check_profile %s/%s/%s/%s", distro, version, target, profile)
-        self.c.execute(
-            """SELECT profile FROM profiles
-            WHERE distro=? and version=? and target=? and profile = coalesce(
-                (select newname from board_rename
-                    where distro = ? and version = ? and
-                        target = ? and origname = ?), ?)
-            LIMIT 1;""",
-            distro,
-            version,
-            target,
-            distro,
-            version,
-            target,
-            profile,
-            profile,
-        )
-        return self.c.fetchval()
-
-    def check_model(self, distro, version, target, model):
-        self.log.debug("check_model %s/%s/%s/%s", distro, version, target, model)
-        self.c.execute(
-            """SELECT profile FROM profiles
-                WHERE distro=? and version=? and target=? and
-                    lower(model) = lower(?);""",
-            distro,
-            version,
-            target,
-            model,
-        )
-        return self.c.fetchval()
-
     def get_packages_image(self, request, as_json=False):
         sql = "select packages_image(?, ?, ?, ?);"
         self.c.execute(

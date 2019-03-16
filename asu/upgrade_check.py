@@ -7,10 +7,12 @@ from asu.utils.common import get_hash
 
 
 class UpgradeCheck(Request):
+    """Handle upgrade requests"""
+
+    required_params = ["distro", "version", "target", "board_name", "revision"]
+
     def __init__(self, config, db):
         super().__init__(config, db)
-        self.log = logging.getLogger(__name__)
-        self.required_params = ["distro", "version", "target", "board_name", "revision"]
 
     def _process_request(self):
         bad_request = self.check_bad_distro()

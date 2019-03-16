@@ -26,7 +26,7 @@ def get_request_hash(request):
         request["distro"],
         request["version"],
         request["target"],
-        request["profile"],
+        request["board_name"],
         request.get("defaults_hash", ""),
         request.get("packages_hash", ""),
     ]
