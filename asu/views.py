@@ -282,74 +282,44 @@ def fetch_targets():
 
 
 @app.cli.command()
-def build_all():
-    """Build all profiles of openwrt latest stable"""
-    for profile in database.get_all_profiles(
-        "openwrt", config.get("openwrt").get("latest")
-    ):
+def build_snap():
+    """Build all profiles of openwrt latest snapshot"""
+    for profile in database.get_all_profiles("openwrt", "snapshots"):
         target, profile = profile
+        if profile == "Default":
+            continue
         params = {
             "distro": "openwrt",
-            "version": config.get("openwrt").get("latest"),
+            "version": "snapshots",
             "target": target,
             "profile": profile,
         }
         params["request_hash"] = get_request_hash(params)
         database.insert_dict("requests", params)
 
+
+@app.cli.command()
+def build_all():
+    """Build all profiles of openwrt latest stable"""
+    for profile in database.get_all_profiles(
+        "openwrt", config.distro("openwrt").get("latest")
+    ):
+        target, profile = profile
+        if profile == "Default":
+            continue
+        params = {
+            "distro": "openwrt",
+            "version": config.distro("openwrt").get("latest"),
+            "target": target,
+            "profile": profile,
+        }
+        params["request_hash"] = get_request_hash(params)
+        database.insert_dict("requests", params)
+
+
 @app.cli.command()
 def set_outdated():
     database.c.execute("update targets set last_sync = '2010-01-01';")
-
-@app.cli.command()
-def build_worker():
-    """Build image with worker package preinstalled"""
-    log.info("build worker image")
-    packages = [
-        "bash",
-        "bzip2",
-        "coreutils",
-        "coreutils-stat",
-        "diffutils",
-        "file",
-        "gawk",
-        "gcc",
-        "getopt",
-        "git",
-        "libncurses",
-        "make",
-        "patch",
-        "perl",
-        "perlbase-attributes",
-        "perlbase-findbin",
-        "perlbase-getopt",
-        "perlbase-thread",
-        "python-light",
-        "tar",
-        "unzip",
-        "wget",
-        "xz",
-        "xzdiff",
-        "xzgrep",
-        "xzless",
-        "xz-utils",
-        "zlib-dev",
-    ]
-
-    packages_hash = get_packages_hash(packages)
-    database.insert_packages_hash(packages_hash, packages)
-
-    params = {
-        "distro": "openwrt",
-        "version": config.get("openwrt").get("latest"),
-        "target": "x86/64",
-        "profile": "Generic",
-        "packages_hash": packages_hash,
-    }
-
-    params["request_hash"] = get_request_hash(params)
-
-    database.insert_dict("requests", params)
 
 
 def insert_board_rename():

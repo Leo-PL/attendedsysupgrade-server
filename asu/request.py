@@ -43,7 +43,7 @@ class Request:
             return False
 
     def check_bad_version(self):
-        if not self.request_json["version"] in self.config.get(
+        if not self.request_json["version"] in self.config.distro(
             self.request["distro"]
         ).get("versions"):
             self.response_json["error"] = "unknown version {}".format(

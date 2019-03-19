@@ -55,6 +55,9 @@ class Config:
     def get_distros(self):
         return self.config.get("active_distros", ["openwrt"])
 
+    def distro(self, distro):
+        return self.config["distros"][distro]
+
     def version(self, distro, version):
         return self.config["distros"][distro]["versions"][version]
 

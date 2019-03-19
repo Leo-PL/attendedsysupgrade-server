@@ -41,9 +41,7 @@ class UpgradeCheck(Request):
 
         if self.config.snapshots(self.request["distro"], self.request["version"]):
             revision = self.database.get_revision(
-                self.request["distro"],
-                self.request["version"],
-                self.request["target"],
+                self.request["distro"], self.request["version"], self.request["target"]
             )
             if self.request_json.get("revision") != revision:
                 self.response_json["revision"] = revision
