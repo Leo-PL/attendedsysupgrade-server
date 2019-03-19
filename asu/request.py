@@ -57,24 +57,12 @@ class Request:
 
     def check_bad_target(self):
         self.request["target"] = self.request_json["target"]
-
-        # Check if sysupgrade is supported.
-        # If None is returned the subtarget isn't found
-        sysupgrade_supported = self.database.sysupgrade_supported(self.request)
-        if sysupgrade_supported is None:
+        if not self.database.check_target(self.request):
             self.response_json["error"] = "unknown target {}".format(
                 self.request["target"]
             )
             self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
             return self.respond()
-        elif not sysupgrade_supported and self.sysupgrade_requested:
-            self.response_json["error"] = "target currently not supported {}".format(
-                self.request["target"]
-            )
-            self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
-            return self.respond()
-
-        # all checks passed, not bad
         return False
 
     def respond(self, json_content=False):

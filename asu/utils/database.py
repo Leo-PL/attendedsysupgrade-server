@@ -139,6 +139,13 @@ class Database:
         self.commit()
         self.cnxn.autocommit = True
 
+    def check_target(self, request):
+        sql = """select 1 from targets where
+            distro = ? and version = ? and target = ?;"""
+        return self.c.execute(
+            sql, request["distro"], request["version"], request["target"]
+        ).fetchone()
+
     def check_board_name(self, request):
         sql = """select profile, metadata from supported_devices where
             distro = ? and
