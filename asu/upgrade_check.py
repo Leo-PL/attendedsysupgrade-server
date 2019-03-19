@@ -20,15 +20,15 @@ class UpgradeCheck(Request):
             return bad_request
         self.log.debug("passed distro check")
 
-        bad_request = self.check_bad_target()
-        if bad_request:
-            return bad_request
-        self.log.debug("passed target check")
-
         bad_request = self.check_bad_version()
         if bad_request:
             return bad_request
         self.log.debug("passed version check")
+
+        bad_request = self.check_bad_target()
+        if bad_request:
+            return bad_request
+        self.log.debug("passed target check")
 
         self.request["board_name"] = self.request_json["board_name"]
 
