@@ -1,5 +1,4 @@
 from http import HTTPStatus
-import logging
 import json
 
 from asu.request import Request
@@ -32,12 +31,17 @@ class UpgradeCheck(Request):
 
         self.request["board_name"] = self.request_json["board_name"]
 
-        profile, metadata = self.database.check_board_name(self.request)
-        if not (profile and metadata):
-            self.response_json["error"] = "device does not support sysupgrades"
-            self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
-            return self.respond()
-        self.log.debug("passed board_name check")
+        if self.request["target"].startswith("x86"):
+            self.request["profile"] = "Generic"
+        else:
+            self.request["profile"], metadata = self.database.check_board_name(
+                self.request
+            )
+            if not (self.request["profile"] and metadata):
+                self.response_json["error"] = "device does not support sysupgrades"
+                self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
+                return self.respond()
+            self.log.debug("passed board_name check")
 
         if self.config.snapshots(self.request["distro"], self.request["version"]):
             revision = self.database.get_revision(

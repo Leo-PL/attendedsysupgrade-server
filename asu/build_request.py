@@ -54,7 +54,7 @@ class BuildRequest(Request):
             return bad_request
 
         # check for valid target
-        bad_target = self.check_bad_target()
+        bad_request = self.check_bad_target()
         if bad_request:
             return bad_request
 
@@ -97,15 +97,17 @@ class BuildRequest(Request):
         if self.request["target"].startswith("x86"):
             self.request["profile"] = "Generic"
         else:
-            profile, metadata = self.database.check_board_name(self.request)
-            if not (profile and (metadata or not self.sysupgrade_requested)):
+            self.request["profile"], metadata = self.database.check_board_name(
+                self.request
+            )
+            if not (
+                self.request["profile"] and (metadata or not self.sysupgrade_requested)
+            ):
                 self.response_json[
                     "error"
                 ] = "unknown device, please check model and board params"
                 self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
                 return self.respond()
-            else:
-                self.request["profile"] = profile
 
         # all checks passed, eventually add to queue!
         self.log.debug("add build job %s", self.request)
