@@ -93,6 +93,7 @@ class BuildRequest(Request):
                 self.request["packages_hash"], self.request["packages"]
             )
 
+        self.request["board_name"] = self.request_json["board_name"]
         if self.request["target"].startswith("x86"):
             self.request["profile"] = "Generic"
         else:
