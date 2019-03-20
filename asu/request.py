@@ -62,7 +62,12 @@ class Request:
 
     def check_bad_profile(self):
         self.request["profile"] = self.request_json["profile"]
-        return self.database.check_board_name()
+        if not self.database.check_profile(self.request):
+            self.response_json["error"] = "unknown profile {}".format(
+                self.request["profile"]
+            )
+            self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
+            return self.respond()
 
     def check_bad_board_name(self):
         if self.request["target"].startswith("x86"):
