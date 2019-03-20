@@ -14,7 +14,7 @@ class UpgradeCheck(Request):
         super().__init__(config, db)
 
     def _process_request(self):
-        if self.config.snapshots(self.request["distro"], self.request["version"]):
+        if self.config.snapshot(self.request["distro"], self.request["version"]):
             revision = self.database.get_revision(
                 self.request["distro"], self.request["version"], self.request["target"]
             )

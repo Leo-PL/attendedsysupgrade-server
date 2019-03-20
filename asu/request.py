@@ -55,7 +55,7 @@ class Request:
     def _process_request(self):
         pass
 
-    def check_bad_board_name():
+    def check_bad_board_name(self):
         if self.request["target"].startswith("x86"):
             self.request["profile"] = "Generic"
         else:
@@ -148,4 +148,7 @@ class Request:
             if required_param not in self.request_json:
                 self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
                 self.response_header["X-Missing-Param"] = required_param
+                self.response_json["error"] = "missing parameter: {}".format(
+                    required_param
+                )
                 return self.respond()
