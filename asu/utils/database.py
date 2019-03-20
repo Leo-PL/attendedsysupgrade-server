@@ -146,6 +146,20 @@ class Database:
             sql, request["distro"], request["version"], request["target"]
         ).fetchone()
 
+    def check_profile(self, request):
+        sql = """select 1 from supported_devices where
+            distro = ? and
+            version = ? and
+            target = ? and
+            profile = ?;"""
+        return self.c.execute(
+            sql,
+            request["distro"],
+            request["version"],
+            request["target"],
+            request["profile"],
+        ).fetchone()
+
     def check_board_name(self, request, board_name):
         sql = """select profile, metadata from supported_devices where
             distro = ? and
@@ -153,11 +167,7 @@ class Database:
             target = ? and
             supported_device = ?;"""
         return self.c.execute(
-            sql,
-            request["distro"],
-            request["version"],
-            request["target"],
-            board_name,
+            sql, request["distro"], request["version"], request["target"], board_name
         ).fetchone() or (None, False)
 
     def check_packages(self, image):

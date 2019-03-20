@@ -9,6 +9,7 @@ class UpgradeCheck(Request):
     """Handle upgrade requests"""
 
     sysupgrade_requested = True
+    required_params = ["distro", "version", "target", "revision", "board_name"]
 
     def __init__(self, config, db):
         super().__init__(config, db)

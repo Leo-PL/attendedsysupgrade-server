@@ -8,7 +8,7 @@ class Request:
     """Parent request class"""
 
     log = logging.getLogger(__name__)
-    required_params = ["distro", "version", "revision", "target", "board_name"]
+    required_params = ["distro", "version", "target"]
     sysupgrade_requested = False
 
     def __init__(self, config, database):
@@ -25,10 +25,9 @@ class Request:
         # check if valid request if no request_hash attached
         if "request_hash" not in self.request_json:
             # first check if all requred params are available
-            if self.required_params:
-                required_params = self.check_required_params()
-                if required_params:
-                    return required_params
+            bad_request = self.check_required_params()
+            if bad_request:
+                return bad_request
 
             bad_request = self.check_bad_distro()
             if bad_request:
@@ -45,15 +44,25 @@ class Request:
                 return bad_request
             self.log.debug("passed target check")
 
-            bad_request = self.check_bad_board_name()
-            if bad_request:
-                return bad_request
-            self.log.debug("passed board_name check")
+            if "profile" in self.request_json:
+                bad_request = self.check_bad_profile()
+                if bad_request:
+                    return bad_request
+                self.log.debug("passed profile check")
+            else:
+                bad_request = self.check_bad_board_name()
+                if bad_request:
+                    return bad_request
+                self.log.debug("passed board_name check")
 
         return self._process_request()
 
     def _process_request(self):
         pass
+
+    def check_bad_profile(self):
+        self.request["profile"] = self.request_json["profile"]
+        return self.database.check_board_name()
 
     def check_bad_board_name(self):
         if self.request["target"].startswith("x86"):
