@@ -146,7 +146,7 @@ class Database:
             sql, request["distro"], request["version"], request["target"]
         ).fetchone()
 
-    def check_board_name(self, request):
+    def check_board_name(self, request, board_name):
         sql = """select profile, metadata from supported_devices where
             distro = ? and
             version = ? and
@@ -157,7 +157,7 @@ class Database:
             request["distro"],
             request["version"],
             request["target"],
-            request["board_name"],
+            board_name,
         ).fetchone() or (None, False)
 
     def check_packages(self, image):

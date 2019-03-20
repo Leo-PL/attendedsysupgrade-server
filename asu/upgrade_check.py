@@ -8,41 +8,10 @@ from asu.utils.common import get_hash
 class UpgradeCheck(Request):
     """Handle upgrade requests"""
 
-    required_params = ["distro", "version", "target", "board_name", "revision"]
-
     def __init__(self, config, db):
         super().__init__(config, db)
 
     def _process_request(self):
-        bad_request = self.check_bad_distro()
-        if bad_request:
-            return bad_request
-        self.log.debug("passed distro check")
-
-        bad_request = self.check_bad_version()
-        if bad_request:
-            return bad_request
-        self.log.debug("passed version check")
-
-        bad_request = self.check_bad_target()
-        if bad_request:
-            return bad_request
-        self.log.debug("passed target check")
-
-        self.request["board_name"] = self.request_json["board_name"]
-
-        if self.request["target"].startswith("x86"):
-            self.request["profile"] = "Generic"
-        else:
-            self.request["profile"], metadata = self.database.check_board_name(
-                self.request
-            )
-            if not (self.request["profile"] and metadata):
-                self.response_json["error"] = "device does not support sysupgrades"
-                self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
-                return self.respond()
-            self.log.debug("passed board_name check")
-
         if self.config.snapshots(self.request["distro"], self.request["version"]):
             revision = self.database.get_revision(
                 self.request["distro"], self.request["version"], self.request["target"]

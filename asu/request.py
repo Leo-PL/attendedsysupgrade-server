@@ -8,7 +8,7 @@ class Request:
     """Parent request class"""
 
     log = logging.getLogger(__name__)
-    required_params = []
+    required_params = ["distro", "version", "revision", "target", "board_name"]
 
     def __init__(self, config, database):
         self.config = config
@@ -21,14 +21,58 @@ class Request:
         self.response_header = {}
         self.response_status = 0
         self.sysupgrade_requested = sysupgrade_requested
-        if self.required_params:
-            required_params = self.check_required_params()
-            if required_params:
-                return required_params
+
+        # check if valid request if no request_hash attached
+        if "request_hash" not in self.request_json:
+            # first check if all requred params are available
+            if self.required_params:
+                required_params = self.check_required_params()
+                if required_params:
+                    return required_params
+
+            bad_request = self.check_bad_distro()
+            if bad_request:
+                return bad_request
+            self.log.debug("passed distro check")
+
+            bad_request = self.check_bad_version()
+            if bad_request:
+                return bad_request
+            self.log.debug("passed version check")
+
+            bad_request = self.check_bad_target()
+            if bad_request:
+                return bad_request
+            self.log.debug("passed target check")
+
+            bad_request = self.check_bad_board_name()
+            if bad_request:
+                return bad_request
+            self.log.debug("passed board_name check")
+
         return self._process_request()
 
     def _process_request(self):
         pass
+
+    def check_bad_board_name():
+        if self.request["target"].startswith("x86"):
+            self.request["profile"] = "Generic"
+        else:
+            self.request["profile"], metadata = self.database.check_board_name(
+                self.request, self.request_json["board_name"]
+            )
+            if not self.request["profile"]:
+                self.response_json["error"] = "unknown device {}".format(
+                    self.request_json["board_name"]
+                )
+                self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
+                return self.respond()
+
+            if self.sysupgrade_requested and not metadata:
+                self.response_json["error"] = "device does not support sysupgrades"
+                self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
+                return self.respond()
 
     # these checks are relevant for upgrade and image reuqest
     def check_bad_distro(self):

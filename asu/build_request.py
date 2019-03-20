@@ -8,7 +8,6 @@ from asu.request import Request
 class BuildRequest(Request):
     """Handle build requests"""
 
-    required_params = ["distro", "version", "target", "board_name", "revision"]
 
     def __init__(self, config, db):
         super().__init__(config, db)
@@ -41,22 +40,6 @@ class BuildRequest(Request):
         else:
             self.request["request_hash"] = request_hash
             self.response_json["request_hash"] = self.request["request_hash"]
-
-        # if not perform various checks to see if the request is acutally valid
-
-        # validate distro and version
-        bad_request = self.check_bad_distro()
-        if bad_request:
-            return bad_request
-
-        bad_request = self.check_bad_version()
-        if bad_request:
-            return bad_request
-
-        # check for valid target
-        bad_request = self.check_bad_target()
-        if bad_request:
-            return bad_request
 
         # validate attached defaults
         if "defaults" in self.request_json:
