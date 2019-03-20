@@ -38,14 +38,14 @@ def api_upgrade_check(request_hash=None):
     return uc.process_request(request_json)
 
 
-# request methos for individual image
-# uses post methos to receive build information
-
 # the post request should contain the following entries
 # distribution, version, revision, target, packages
+@app.route("/api/build-request", methods=["POST"])
+@app.route("/api/build-request/<request_hash>", methods=["GET"])
+# this is somewhat legacy
 @app.route("/api/upgrade-request", methods=["POST"])
 @app.route("/api/upgrade-request/<request_hash>", methods=["GET"])
-def api_upgrade_request(request_hash=None):
+def api_build_request(request_hash=None):
     if request.method == "POST":
         try:
             request_json = json.loads(request.get_data().decode("utf-8"))
@@ -56,7 +56,7 @@ def api_upgrade_request(request_hash=None):
             return "[]", HTTPStatus.BAD_REQUEST
         request_json = {"request_hash": request_hash}
 
-    return br.process_request(request_json, sysupgrade_requested=1)
+    return br.process_request(request_json)
 
 
 @app.route("/")
@@ -64,21 +64,6 @@ def api_upgrade_request(request_hash=None):
 @app.route("/stats/")
 def api_redirect():
     return redirect("https://github.com/aparcar/attendedsysupgrade-server/")
-
-
-@app.route("/api/build-request", methods=["POST"])
-@app.route("/api/build-request/<request_hash>", methods=["GET"])
-def api_files_request(request_hash=None):
-    if request.method == "POST":
-        try:
-            request_json = json.loads(request.get_data().decode("utf-8"))
-        except json.JSONDecodeError:
-            return "[]", HTTPStatus.BAD_REQUEST
-    else:
-        if not request_hash:
-            return "[]", HTTPStatus.BAD_REQUEST
-        request_json = {"request_hash": request_hash}
-    return br.process_request(request_json)
 
 
 @app.route("/api/v1/stats/image_stats")

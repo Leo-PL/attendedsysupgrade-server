@@ -9,18 +9,18 @@ class Request:
 
     log = logging.getLogger(__name__)
     required_params = ["distro", "version", "revision", "target", "board_name"]
+    sysupgrade_requested = False
 
     def __init__(self, config, database):
         self.config = config
         self.database = database
 
-    def process_request(self, request_json, sysupgrade_requested=False):
+    def process_request(self, request_json):
         self.request = {}
         self.request_json = request_json
         self.response_json = {}
         self.response_header = {}
         self.response_status = 0
-        self.sysupgrade_requested = sysupgrade_requested
 
         # check if valid request if no request_hash attached
         if "request_hash" not in self.request_json:
@@ -71,7 +71,7 @@ class Request:
 
             if self.sysupgrade_requested and not metadata:
                 self.response_json["error"] = "device does not support sysupgrades"
-                self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
+                self.response_status = HTTPStatus.NOT_IMPLEMENTED  # 501
                 return self.respond()
 
     # these checks are relevant for upgrade and image reuqest

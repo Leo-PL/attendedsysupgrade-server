@@ -8,6 +8,8 @@ from asu.utils.common import get_hash
 class UpgradeCheck(Request):
     """Handle upgrade requests"""
 
+    sysupgrade_requested = True
+
     def __init__(self, config, db):
         super().__init__(config, db)
 
