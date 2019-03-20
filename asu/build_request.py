@@ -8,7 +8,6 @@ from asu.request import Request
 class BuildRequest(Request):
     """Handle build requests"""
 
-
     def __init__(self, config, db):
         super().__init__(config, db)
 
@@ -76,23 +75,7 @@ class BuildRequest(Request):
                 self.request["packages_hash"], self.request["packages"]
             )
 
-        self.request["board_name"] = self.request_json["board_name"]
-        if self.request["target"].startswith("x86"):
-            self.request["profile"] = "Generic"
-        else:
-            self.request["profile"], metadata = self.database.check_board_name(
-                self.request
-            )
-            if not (
-                self.request["profile"] and (metadata or not self.sysupgrade_requested)
-            ):
-                self.response_json[
-                    "error"
-                ] = "unknown device, please check model and board params"
-                self.response_status = HTTPStatus.PRECONDITION_FAILED  # 412
-                return self.respond()
-
-        # all checks passed, eventually add to queue!
+        # all checks passed, add job to queue!
         self.log.debug("add build job %s", self.request)
         self.database.add_build_job(self.request)
         return self.return_queued()
@@ -110,10 +93,14 @@ class BuildRequest(Request):
 
     def return_status(self):
         # image created, return all desired information
-        if self.request["request_status"] == "created":
+        # TODO no_sysupgrade is somewhat legacy now
+        if (
+            self.request["request_status"] == "created"
+            or self.request["request_status"] == "no_sysupgrade"
+        ):
             self.database.cache_hit(self.request["image_hash"])
             image_path = self.database.get_image_path(self.request["image_hash"])
-            self.response_json["sysupgrade"] = image_path["sysupgrade"]
+            self.response_json["sysupgrade"] = image_path.get("sysupgrade", "")
             self.response_json["log"] = "/download/{}/buildlog-{}.txt".format(
                 image_path["files"], self.request["image_hash"]
             )
@@ -122,29 +109,6 @@ class BuildRequest(Request):
             self.response_json["image_hash"] = self.request["image_hash"]
 
             self.response_status = HTTPStatus.OK  # 200
-
-        elif self.request["request_status"] == "no_sysupgrade":
-            self.database.cache_hit(self.request["image_hash"])
-            if self.sysupgrade_requested:
-                # no sysupgrade found but requested,
-                # let user figure out what # to do
-                self.response_json[
-                    "error"
-                ] = "No sysupgrade file produced, may not supported by model."
-
-                self.response_status = HTTPStatus.NOT_IMPLEMENTED  # 501
-            else:
-                # no sysupgrade found but not requested, factory image is
-                # likely from interest
-                image_path = self.database.get_image_path(self.request["image_hash"])
-                self.response_json["files"] = "/json/{}/".format(image_path["files"])
-                self.response_json["log"] = "/download/{}/buildlog-{}.txt".format(
-                    image_path["files"], self.request["image_hash"]
-                )
-                self.response_json["request_hash"] = self.request["request_hash"]
-                self.response_json["image_hash"] = self.request["image_hash"]
-
-                self.response_status = HTTPStatus.OK  # 200
 
             self.respond()
 
